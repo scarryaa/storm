@@ -9,10 +9,52 @@ use x11_dl::xlib::{self, Display, Xlib};
 pub struct Application {
     pub xlib: Xlib,
     pub display: *mut Display,
+    window: Option<LinuxWindow>,
+    wm_protocols: xlib::Atom,
+    wm_delete_window: xlib::Atom,
 }
 
 impl Application {
-    pub fn new() -> Result<Self, PlatformError> {
+    pub fn set_window(&mut self, window: LinuxWindow) {
+        self.window = Some(window);
+    }
+
+    pub fn setup(&mut self) -> Result<(), PlatformError> {
+        unsafe {
+            if let Some(window) = &self.window {
+                let wm_protocols_str = CString::new("WM_PROTOCOLS").unwrap();
+                let wm_delete_window_str = CString::new("WM_DELETE_WINDOW").unwrap();
+
+                // Store these as struct fields so run() can access them
+                self.wm_protocols =
+                    (self.xlib.XInternAtom)(self.display, wm_protocols_str.as_ptr(), xlib::False);
+                self.wm_delete_window = (self.xlib.XInternAtom)(
+                    self.display,
+                    wm_delete_window_str.as_ptr(),
+                    xlib::False,
+                );
+
+                let mut protocols = [self.wm_delete_window];
+
+                (self.xlib.XSetWMProtocols)(
+                    self.display,
+                    window.native_handle,
+                    protocols.as_mut_ptr(),
+                    protocols.len() as c_int,
+                );
+
+                // Show window
+                (self.xlib.XMapWindow)(self.display, window.native_handle);
+                Ok(())
+            } else {
+                Err(PlatformError::NoWindowSet)
+            }
+        }
+    }
+}
+
+impl ApplicationBehavior for Application {
+    fn new() -> Result<Self, PlatformError> {
         unsafe {
             let xlib = xlib::Xlib::open().unwrap();
             let display = (xlib.XOpenDisplay)(ptr::null());
@@ -21,32 +63,18 @@ impl Application {
                 return Err(PlatformError::DisplayInitFailed);
             }
 
-            Ok(Self { xlib, display })
+            Ok(Self {
+                xlib,
+                display,
+                window: None,
+                wm_protocols: 0,
+                wm_delete_window: 0,
+            })
         }
     }
 
-    pub fn run(&self, window: &LinuxWindow) -> Result<(), PlatformError> {
+    fn run(&self) -> Result<(), PlatformError> {
         unsafe {
-            let wm_protocols_str = CString::new("WM_PROTOCOLS").unwrap();
-            let wm_delete_window_str = CString::new("WM_DELETE_WINDOW").unwrap();
-
-            let wm_protocols =
-                (self.xlib.XInternAtom)(self.display, wm_protocols_str.as_ptr(), xlib::False);
-            let wm_delete_window =
-                (self.xlib.XInternAtom)(self.display, wm_delete_window_str.as_ptr(), xlib::False);
-
-            let mut protocols = [wm_delete_window];
-
-            (self.xlib.XSetWMProtocols)(
-                self.display,
-                window.native_handle,
-                protocols.as_mut_ptr(),
-                protocols.len() as c_int,
-            );
-
-            // Show window
-            (self.xlib.XMapWindow)(self.display, window.native_handle);
-
             // Main loop
             let mut event: xlib::XEvent = mem::MaybeUninit::uninit().assume_init();
 

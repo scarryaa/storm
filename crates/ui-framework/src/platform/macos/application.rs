@@ -1,3 +1,5 @@
+use crate::platform::ApplicationBehavior;
+use crate::platform::PlatformError;
 use cocoa::appkit::{NSApplication, NSApplicationActivationPolicy};
 use cocoa::base::{id, nil, YES};
 use cocoa::foundation::NSAutoreleasePool;
@@ -6,8 +8,8 @@ pub struct Application {
     app: id,
 }
 
-impl Application {
-    pub fn new() -> Self {
+impl ApplicationBehavior for Application {
+    fn new() -> Result<Self, PlatformError> {
         unsafe {
             let _pool = NSAutoreleasePool::new(nil);
             let app = NSApplication::sharedApplication(nil);
@@ -16,19 +18,20 @@ impl Application {
             );
             app.activateIgnoringOtherApps_(YES);
 
-            Self { app }
+            Ok(Self { app })
         }
     }
 
-    pub fn run(&self) {
+    fn run(&self) -> Result<(), PlatformError> {
         unsafe {
             self.app.run();
+            Ok(())
         }
     }
 }
 
 impl Default for Application {
     fn default() -> Self {
-        Self::new()
+        Self::new().expect("Unable to create Application")
     }
 }

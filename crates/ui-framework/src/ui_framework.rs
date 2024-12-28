@@ -1,4 +1,4 @@
-mod platform;
+pub mod platform;
 mod window;
 
 pub use platform::Application;

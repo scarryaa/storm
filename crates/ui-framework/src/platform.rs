@@ -17,6 +17,13 @@ pub use crate::platform::macos::application::Application;
 use crate::window::{WindowBehavior, WindowOptions};
 use error::PlatformError;
 
+pub trait ApplicationBehavior {
+    fn new() -> Result<Self, PlatformError>
+    where
+        Self: Sized;
+    fn run(&self) -> Result<(), PlatformError>;
+}
+
 pub fn create_platform_window(
     app: &Application,
     title: String,
