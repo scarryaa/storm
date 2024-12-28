@@ -1,5 +1,6 @@
 use crate::platform::error::PlatformError;
 use crate::window::{WindowBehavior, WindowOptions};
+use std::any::Any;
 use std::ffi::CString;
 use std::mem;
 use std::os::raw::{c_char, c_uint};
@@ -7,6 +8,7 @@ use std::ptr;
 use x11_dl::xlib::Window as XWindow;
 use x11_dl::xlib::{self, Display, Xlib};
 
+#[derive(Clone)]
 pub(crate) struct LinuxWindow {
     pub native_handle: XWindow,
     xlib: *const Xlib,
@@ -89,5 +91,13 @@ impl WindowBehavior for LinuxWindow {
 
     fn set_size(&mut self, width: u32, height: u32) -> Result<(), PlatformError> {
         todo!()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }

@@ -5,6 +5,7 @@ use cocoa::appkit::{NSMainMenuWindowLevel, NSWindow, NSWindowStyleMask};
 use cocoa::base::{id, nil, NO};
 use cocoa::foundation::NSString;
 use cocoa::foundation::{NSAutoreleasePool, NSPoint, NSRect, NSSize};
+use std::any::Any;
 
 pub(crate) struct MacOSWindow {
     native_handle: id,
@@ -89,5 +90,13 @@ impl WindowBehavior for MacOSWindow {
 
     fn set_size(&mut self, width: u32, height: u32) -> Result<(), PlatformError> {
         todo!()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
