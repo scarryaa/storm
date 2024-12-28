@@ -3,4 +3,5 @@ pub enum PlatformError {
     WindowCreationError(String),
     EventError(String),
     PlatformNotSupported,
+    DisplayInitFailed,
 }

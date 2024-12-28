@@ -7,8 +7,8 @@ use std::ptr;
 use x11_dl::xlib::{self, Display, Xlib};
 
 pub struct Application {
-    xlib: Xlib,
-    display: *mut Display,
+    pub xlib: Xlib,
+    pub display: *mut Display,
 }
 
 impl Application {
@@ -31,13 +31,13 @@ impl Application {
             let wm_delete_window_str = CString::new("WM_DELETE_WINDOW").unwrap();
 
             let wm_protocols =
-                (xlib.XInternAtom)(self.display, wm_protocols_str.as_ptr(), xlib::False);
+                (self.xlib.XInternAtom)(self.display, wm_protocols_str.as_ptr(), xlib::False);
             let wm_delete_window =
-                (xlib.XInternAtom)(self.display, wm_delete_window_str.as_ptr(), xlib::False);
+                (self.xlib.XInternAtom)(self.display, wm_delete_window_str.as_ptr(), xlib::False);
 
             let mut protocols = [wm_delete_window];
 
-            (xlib.XSetWMProtocols)(
+            (self.xlib.XSetWMProtocols)(
                 self.display,
                 window.native_handle,
                 protocols.as_mut_ptr(),
@@ -45,13 +45,13 @@ impl Application {
             );
 
             // Show window
-            (xlib.XMapWindow)(self.display, window.native_handle);
+            (self.xlib.XMapWindow)(self.display, window.native_handle);
 
             // Main loop
             let mut event: xlib::XEvent = mem::MaybeUninit::uninit().assume_init();
 
             loop {
-                (xlib.XNextEvent)(self.display, &mut event);
+                (self.xlib.XNextEvent)(self.display, &mut event);
 
                 match event.get_type() {
                     xlib::ClientMessage => {

@@ -1,4 +1,4 @@
-use crate::platform::error::PlatformError;
+use crate::{platform::error::PlatformError, Application};
 
 pub trait WindowBehavior {
     fn show(&mut self) -> Result<(), PlatformError>;
@@ -34,13 +34,14 @@ pub struct Window {
 
 impl Window {
     pub fn new(
+        app: &Application,
         title: String,
         width: u32,
         height: u32,
         options: WindowOptions,
     ) -> Result<Self, PlatformError> {
         let inner =
-            crate::platform::create_platform_window(title.clone(), width, height, &options)?;
+            crate::platform::create_platform_window(app, title.clone(), width, height, &options)?;
 
         Ok(Self {
             inner,
