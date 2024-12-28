@@ -75,7 +75,6 @@ impl ApplicationBehavior for Application {
                 let wm_protocols_str = CString::new("WM_PROTOCOLS").unwrap();
                 let wm_delete_window_str = CString::new("WM_DELETE_WINDOW").unwrap();
 
-                // Store these as struct fields so run() can access them
                 self.wm_protocols =
                     (self.xlib.XInternAtom)(self.display, wm_protocols_str.as_ptr(), xlib::False);
                 self.wm_delete_window = (self.xlib.XInternAtom)(
