@@ -2,9 +2,12 @@ use crate::platform::ApplicationBehavior;
 use crate::platform::PlatformError;
 use crate::Window;
 use windows_sys::Win32::Foundation::HINSTANCE;
+use windows_sys::Win32::System::LibraryLoader::GetModuleHandleA;
+use windows_sys::Win32::UI::WindowsAndMessaging::DispatchMessageA;
+use windows_sys::Win32::UI::WindowsAndMessaging::GetMessageA;
 
 pub struct Application {
-    instance: HINSTANCE,
+    pub instance: HINSTANCE,
 }
 
 impl ApplicationBehavior for Application {

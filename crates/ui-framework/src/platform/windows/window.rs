@@ -1,7 +1,10 @@
+use std::any::Any;
+
 use crate::platform::error::PlatformError;
 use crate::window::{WindowBehavior, WindowOptions};
-use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
-use windows_sys::Win32::UI::WindowsAndMessaging::*;
+use crate::Application;
+use windows_sys::s;
+use windows_sys::{Win32::Foundation::*, Win32::UI::WindowsAndMessaging::*};
 
 pub(crate) struct WindowsWindow {
     native_handle: HWND,
@@ -53,7 +56,7 @@ impl WindowsWindow {
             let handle = CreateWindowExA(
                 0,
                 window_class,
-                s!("window"),
+                s!("storm"),
                 WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
@@ -65,9 +68,9 @@ impl WindowsWindow {
                 std::ptr::null(),
             );
 
-            Self {
+            Ok(Self {
                 native_handle: handle,
-            }
+            })
         }
     }
 }
@@ -89,8 +92,8 @@ impl WindowBehavior for WindowsWindow {
 
     fn set_title(&mut self, title: &str) -> Result<(), PlatformError> {
         unsafe {
-            let title = std::ffi::CString::new(title).unwrap();
-            SetWindowTextA(self.native_handle, title.as_ptr());
+            let title = s!("window");
+            SetWindowTextA(self.native_handle, title);
             Ok(())
         }
     }
@@ -99,7 +102,7 @@ impl WindowBehavior for WindowsWindow {
         unsafe {
             SetWindowPos(
                 self.native_handle,
-                0,
+                std::ptr::null_mut(),
                 0,
                 0,
                 width as i32,
@@ -108,6 +111,14 @@ impl WindowBehavior for WindowsWindow {
             );
             Ok(())
         }
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 
