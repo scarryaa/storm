@@ -1,5 +1,6 @@
 use crate::platform::ApplicationBehavior;
 use crate::platform::PlatformError;
+use crate::Window;
 use cocoa::appkit::{NSApplication, NSApplicationActivationPolicy};
 use cocoa::base::{id, nil, YES};
 use cocoa::foundation::NSAutoreleasePool;
@@ -27,6 +28,14 @@ impl ApplicationBehavior for Application {
             self.app.run();
             Ok(())
         }
+    }
+
+    fn set_window(&mut self, _window: Window) {
+        // No-op for macOS
+    }
+
+    fn setup(&mut self) -> Result<(), PlatformError> {
+        Ok(()) // No-op for macOS
     }
 }
 

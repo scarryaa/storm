@@ -73,7 +73,10 @@ impl LinuxWindow {
 
 impl WindowBehavior for LinuxWindow {
     fn show(&mut self) -> Result<(), PlatformError> {
-        todo!()
+        unsafe {
+            ((*self.xlib).XMapWindow)(self.display, self.native_handle);
+            Ok(())
+        }
     }
 
     fn hide(&mut self) -> Result<(), PlatformError> {

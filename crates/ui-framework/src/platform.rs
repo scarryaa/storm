@@ -15,12 +15,15 @@ pub use crate::platform::linux::application::Application;
 pub use crate::platform::macos::application::Application;
 
 use crate::window::{WindowBehavior, WindowOptions};
+use crate::Window;
 use error::PlatformError;
 
 pub trait ApplicationBehavior {
     fn new() -> Result<Self, PlatformError>
     where
         Self: Sized;
+    fn set_window(&mut self, window: Window);
+    fn setup(&mut self) -> Result<(), PlatformError>;
     fn run(&self) -> Result<(), PlatformError>;
 }
 
