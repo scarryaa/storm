@@ -1,3 +1,10 @@
+use ui_framework::{Application, Window, WindowOptions};
+
 fn main() {
-    println!("Hello, world!");
+    let app = Application::new();
+
+    let options = WindowOptions::default();
+    Window::new("storm".to_string(), 800, 600, options).unwrap();
+
+    app.run();
 }
