@@ -1,5 +1,6 @@
 use crate::platform::error::PlatformError;
 use crate::platform::linux::window::LinuxWindow;
+use crate::platform::ApplicationBehavior;
 use std::ffi::CString;
 use std::mem;
 use std::os::raw::c_int;
@@ -85,10 +86,10 @@ impl ApplicationBehavior for Application {
                     xlib::ClientMessage => {
                         let xclient = xlib::XClientMessageEvent::from(event);
 
-                        if xclient.message_type == wm_protocols && xclient.format == 32 {
+                        if xclient.message_type == self.wm_protocols && xclient.format == 32 {
                             let protocol = xclient.data.get_long(0) as xlib::Atom;
 
-                            if protocol == wm_delete_window {
+                            if protocol == self.wm_delete_window {
                                 return Ok(());
                             }
                         }
