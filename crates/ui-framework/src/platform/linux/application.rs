@@ -7,6 +7,7 @@ use std::mem;
 use std::os::raw::c_int;
 use std::ptr;
 use x11_dl::xlib::{self, Display, Xlib};
+use crate::window::WindowBehavior;
 
 pub struct Application {
     pub xlib: Xlib,
@@ -98,6 +99,12 @@ impl ApplicationBehavior for Application {
             } else {
                 Err(PlatformError::NoWindowSet)
             }
+        }
+    }
+
+    fn show(&mut self) {
+        if let Some(window) = &mut self.window {
+            window.show().expect("Failed to show window");
         }
     }
 }

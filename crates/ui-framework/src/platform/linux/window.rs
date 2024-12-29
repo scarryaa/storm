@@ -72,7 +72,7 @@ impl LinuxWindow {
                 native_handle: window,
                 xlib,
                 display,
-                renderer: vulkan_renderer,
+                renderer: vulkan_renderer?,
             })
         }
     }
