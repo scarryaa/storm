@@ -95,23 +95,6 @@ impl VulkanRenderer {
                 .create_instance(&create_info, None)
                 .expect("Instance creation error");
 
-            let debug_info = vk::DebugUtilsMessengerCreateInfoEXT::default()
-                .message_severity(
-                    vk::DebugUtilsMessageSeverityFlagsEXT::ERROR
-                        | vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
-                        | vk::DebugUtilsMessageSeverityFlagsEXT::INFO,
-                )
-                .message_type(
-                    vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
-                        | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION
-                        | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE,
-                )
-                .pfn_user_callback(Some(vulkan_debug_callback));
-
-            let debug_utils_loader = debug_utils::Instance::new(&entry, &instance);
-            let debug_call_back = debug_utils_loader
-                .create_debug_utils_messenger(&debug_info, None)
-                .unwrap();
             let pdevices = instance
                 .enumerate_physical_devices()
                 .expect("Physical device error");
@@ -148,7 +131,6 @@ impl VulkanRenderer {
                                         )
                                         .unwrap();
                             if supports_graphic_and_surface {
-                                let physical_device = *pdevice;
                                 Some((*pdevice, index))
                             } else {
                                 None
@@ -180,10 +162,6 @@ impl VulkanRenderer {
             let device = instance
                 .create_device(pdevice, &device_create_info, None)
                 .unwrap();
-
-            let swapchain_loader = swapchain::Instance::new(&entry, &instance);
-
-            let present_queue = device.get_device_queue(queue_family_index, 0);
 
             let surface_format = surface_loader
                 .get_physical_device_surface_formats(pdevice, surface)
