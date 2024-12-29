@@ -14,5 +14,6 @@ fn main() -> Result<(), PlatformError> {
 
     app.set_window(window);
     app.setup()?;
+    app.show();
     app.run()
 }

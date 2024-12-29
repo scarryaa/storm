@@ -25,6 +25,7 @@ pub trait ApplicationBehavior {
     fn set_window(&mut self, window: Window);
     fn setup(&mut self) -> Result<(), PlatformError>;
     fn run(&self) -> Result<(), PlatformError>;
+    fn show(&mut self);
 }
 
 pub fn create_platform_window(

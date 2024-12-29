@@ -7,6 +7,7 @@ use cocoa::foundation::NSAutoreleasePool;
 
 pub struct Application {
     app: id,
+    window: Option<Window>,
 }
 
 impl ApplicationBehavior for Application {
@@ -19,7 +20,21 @@ impl ApplicationBehavior for Application {
             );
             app.activateIgnoringOtherApps_(YES);
 
-            Ok(Self { app })
+            Ok(Self {
+                app,
+                window: None, // Initialize as None
+            })
+        }
+    }
+
+    fn set_window(&mut self, window: Window) {
+        self.window = Some(window);
+    }
+
+    fn show(&mut self) {
+        // Show the window if we have one
+        if let Some(window) = &mut self.window {
+            window.show().expect("Failed to show window");
         }
     }
 
@@ -30,12 +45,8 @@ impl ApplicationBehavior for Application {
         }
     }
 
-    fn set_window(&mut self, _window: Window) {
-        // No-op for macOS
-    }
-
     fn setup(&mut self) -> Result<(), PlatformError> {
-        Ok(()) // No-op for macOS
+        Ok(())
     }
 }
 
