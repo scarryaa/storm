@@ -1,3 +1,4 @@
+use super::vulkan_renderer::VulkanRenderer;
 use crate::platform::error::PlatformError;
 use crate::window::{WindowBehavior, WindowOptions};
 use std::any::Any;
@@ -13,6 +14,7 @@ pub(crate) struct LinuxWindow {
     pub native_handle: XWindow,
     xlib: *const Xlib,
     display: *mut Display,
+    renderer: VulkanRenderer,
 }
 
 pub(crate) fn create_window(
@@ -64,10 +66,13 @@ impl LinuxWindow {
             let title_str = CString::new(title).unwrap();
             (xlib.XStoreName)(display, window, title_str.as_ptr() as *mut c_char);
 
+            let vulkan_renderer = VulkanRenderer::new(window, display, width, height);
+
             Ok(Self {
                 native_handle: window,
                 xlib,
                 display,
+                renderer: vulkan_renderer,
             })
         }
     }
@@ -99,5 +104,13 @@ impl WindowBehavior for LinuxWindow {
 
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
+    }
+}
+
+impl Drop for LinuxWindow {
+    fn drop(&mut self) {
+        unsafe {
+            ((*self.xlib).XDestroyWindow)(self.display, self.native_handle);
+        }
     }
 }
