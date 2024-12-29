@@ -1,13 +1,13 @@
 use crate::platform::error::PlatformError;
 use crate::platform::linux::window::LinuxWindow;
 use crate::platform::ApplicationBehavior;
+use crate::window::WindowBehavior;
 use crate::Window;
 use std::ffi::CString;
 use std::mem;
 use std::os::raw::c_int;
 use std::ptr;
 use x11_dl::xlib::{self, Display, Xlib};
-use crate::window::WindowBehavior;
 
 pub struct Application {
     pub xlib: Xlib,
@@ -73,6 +73,8 @@ impl ApplicationBehavior for Application {
     fn setup(&mut self) -> Result<(), PlatformError> {
         unsafe {
             if let Some(window) = &self.window {
+                (self.xlib.XSync)(self.display, xlib::False);
+
                 let wm_protocols_str = CString::new("WM_PROTOCOLS").unwrap();
                 let wm_delete_window_str = CString::new("WM_DELETE_WINDOW").unwrap();
 
@@ -84,8 +86,19 @@ impl ApplicationBehavior for Application {
                     xlib::False,
                 );
 
-                let mut protocols = [self.wm_delete_window];
+                // Verify window exists before setting protocols
+                let mut window_attributes = mem::MaybeUninit::uninit();
+                let status = (self.xlib.XGetWindowAttributes)(
+                    self.display,
+                    window.native_handle,
+                    window_attributes.as_mut_ptr(),
+                );
 
+                if status == 0 {
+                    return Err(PlatformError::NoWindowSet);
+                }
+
+                let mut protocols = [self.wm_delete_window];
                 (self.xlib.XSetWMProtocols)(
                     self.display,
                     window.native_handle,
@@ -93,7 +106,8 @@ impl ApplicationBehavior for Application {
                     protocols.len() as c_int,
                 );
 
-                // Show window
+                // Flush changes before mapping
+                (self.xlib.XFlush)(self.display);
                 (self.xlib.XMapWindow)(self.display, window.native_handle);
                 Ok(())
             } else {

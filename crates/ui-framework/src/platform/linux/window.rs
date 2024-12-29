@@ -66,7 +66,26 @@ impl LinuxWindow {
             let title_str = CString::new(title).unwrap();
             (xlib.XStoreName)(display, window, title_str.as_ptr() as *mut c_char);
 
-            let vulkan_renderer = VulkanRenderer::new(window, display, width, height);
+            // Map window and ensure it's visible
+            (xlib.XMapWindow)(display, window);
+            (xlib.XFlush)(display);
+
+            // Add small delay to ensure window is mapped
+            std::thread::sleep(std::time::Duration::from_millis(100));
+
+            // Final sync before creating Vulkan renderer
+            (xlib.XSync)(display, 0);
+
+            // Verify window attributes are valid
+            let mut window_attributes = mem::MaybeUninit::uninit();
+            if (xlib.XGetWindowAttributes)(display, window, window_attributes.as_mut_ptr()) == 0 {
+                (xlib.XDestroyWindow)(display, window);
+                return Err(PlatformError::WindowCreationError(
+                    "XGetWindowAttributes failed".to_string(),
+                ));
+            }
+
+            let vulkan_renderer = VulkanRenderer::new(window, display, width, height, xlib);
 
             Ok(Self {
                 native_handle: window,

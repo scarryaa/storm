@@ -1,17 +1,14 @@
+use ash::ext::debug_utils;
+use ash::khr::{surface, swapchain, xlib_surface};
 use ash::Entry;
 use ash::{self, vk};
-use crate::platform::linux::vulkan_renderer::ash::Device;
-use ash::khr::{surface, swapchain, xlib_surface};
 use std::ffi::c_char;
-use crate::platform::linux::vulkan_renderer::ash::Instance;
 use x11_dl::xlib::Window as XWindow;
-use x11_dl::xlib::{self, Display, Xlib};
-use std::any::Any;
-use ash::ext::debug_utils;
+use x11_dl::xlib::Xlib;
+use x11_dl::xlib::{self, Display};
 
 #[derive(Clone)]
 pub struct VulkanRenderer {
-
     instance: ash::Instance,
     surface: vk::SurfaceKHR,
     physical_device: vk::PhysicalDevice,
@@ -23,24 +20,49 @@ pub struct VulkanRenderer {
 }
 
 impl VulkanRenderer {
-    pub fn new(
-    window: XWindow, 
-    display: *mut Display,
-    width: u32, 
-    height: u32
-) -> Result<Self, Box<dyn std::error::Error>> {
+    pub unsafe fn new(
+        window: XWindow,
+        display: *mut Display,
+        width: u32,
+        height: u32,
+        xlib: &Xlib,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         unsafe {
-   let entry = Entry::load()?;
-        let app_name = c"storm";
-        
-        // Get required extensions
-        let mut extension_names = vec![
-            surface::NAME.as_ptr(),
-            xlib_surface::NAME.as_ptr(),
-            debug_utils::NAME.as_ptr(),
-        ];
+            (xlib.XMapWindow)(display, window);
+            (xlib.XFlush)(display);
 
-            let layer_names = [c"VK_LAYER_KHRONOS_validation"];
+            // Wait for window to be mapped and visible
+            let mut event: xlib::XEvent = std::mem::zeroed();
+            loop {
+                (xlib.XNextEvent)(display, &mut event);
+                if event.get_type() == xlib::MapNotify {
+                    break;
+                }
+            }
+
+            // Additional sync to ensure window is ready
+            (xlib.XSync)(display, xlib::False);
+
+            let mut window_attributes = std::mem::MaybeUninit::uninit();
+            if (xlib.XGetWindowAttributes)(display, window, window_attributes.as_mut_ptr()) == 0 {
+                return Err("Invalid window handle".into());
+            }
+
+            let entry = Entry::load()?;
+            let app_name = c"storm";
+
+            // Get required extensions
+            let mut extension_names = vec![
+                surface::NAME.as_ptr(),
+                xlib_surface::NAME.as_ptr(),
+                debug_utils::NAME.as_ptr(),
+            ];
+
+            let layer_names = if cfg!(debug_assertions) {
+                vec![c"VK_LAYER_KHRONOS_validation"]
+            } else {
+                vec![]
+            };
             let layers_names_raw: Vec<*const c_char> = layer_names
                 .iter()
                 .map(|raw_name| raw_name.as_ptr())
@@ -69,8 +91,7 @@ impl VulkanRenderer {
                 .enabled_extension_names(&extension_names)
                 .flags(create_flags);
 
-            let instance = 
-                entry
+            let instance = entry
                 .create_instance(&create_info, None)
                 .expect("Instance creation error");
 
@@ -91,22 +112,23 @@ impl VulkanRenderer {
             let debug_call_back = debug_utils_loader
                 .create_debug_utils_messenger(&debug_info, None)
                 .unwrap();
-            let pdevices = 
-                instance
+            let pdevices = instance
                 .enumerate_physical_devices()
                 .expect("Physical device error");
-            
-        let xlib_surface = xlib_surface::Instance::new(&entry, &instance);
-        let surface_create_info = vk::XlibSurfaceCreateInfoKHR::default()
-            .dpy(display as *mut std::ffi::c_void)
-            .window(window);
 
-            
-        let surface_loader = surface::Instance::new(&entry, &instance);
+            (xlib.XSync)(display, xlib::False);
 
-        let surface = xlib_surface
-            .create_xlib_surface(&surface_create_info, None)
-            .expect("Failed to create surface");
+            let surface_create_info = vk::XlibSurfaceCreateInfoKHR::default()
+                .dpy(display as *mut std::ffi::c_void)
+                .window(window);
+
+            let xlib_surface = xlib_surface::Instance::new(&entry, &instance);
+
+            let surface_loader = surface::Instance::new(&entry, &instance);
+
+            let surface = xlib_surface
+                .create_xlib_surface(&surface_create_info, None)
+                .expect("Failed to create surface");
 
             let (pdevice, queue_family_index) = pdevices
                 .iter()
@@ -118,8 +140,7 @@ impl VulkanRenderer {
                         .find_map(|(index, info)| {
                             let supports_graphic_and_surface =
                                 info.queue_flags.contains(vk::QueueFlags::GRAPHICS)
-                                    && 
-                                        surface_loader
+                                    && surface_loader
                                         .get_physical_device_surface_support(
                                             *pdevice,
                                             index as u32,
@@ -156,22 +177,19 @@ impl VulkanRenderer {
                 .enabled_extension_names(&device_extension_names_raw)
                 .enabled_features(&features);
 
-            let device = 
-                instance
+            let device = instance
                 .create_device(pdevice, &device_create_info, None)
                 .unwrap();
 
-let swapchain_loader = swapchain::Instance::new(&entry, &instance);
+            let swapchain_loader = swapchain::Instance::new(&entry, &instance);
 
             let present_queue = device.get_device_queue(queue_family_index, 0);
 
-            let surface_format = 
-                surface_loader
+            let surface_format = surface_loader
                 .get_physical_device_surface_formats(pdevice, surface)
                 .unwrap()[0];
 
-            let surface_capabilities = 
-                surface_loader
+            let surface_capabilities = surface_loader
                 .get_physical_device_surface_capabilities(pdevice, surface)
                 .unwrap();
             let mut desired_image_count = surface_capabilities.min_image_count + 1;
@@ -192,8 +210,7 @@ let swapchain_loader = swapchain::Instance::new(&entry, &instance);
             } else {
                 surface_capabilities.current_transform
             };
-            let present_modes = 
-                surface_loader
+            let present_modes = surface_loader
                 .get_physical_device_surface_present_modes(pdevice, surface)
                 .unwrap();
             let present_mode = present_modes
@@ -217,21 +234,20 @@ let swapchain_loader = swapchain::Instance::new(&entry, &instance);
                 .clipped(true)
                 .image_array_layers(1);
 
-            let swapchain =
-                swapchain_loader
+            let swapchain = swapchain_loader
                 .create_swapchain(&swapchain_create_info, None)
                 .unwrap();
 
-Ok(Self {
-    instance,
-    surface,
-    physical_device: pdevice,
-    swapchain,
-    entry,
-    device,
-    surface_loader,
-    swapchain_loader,
-})
+            Ok(Self {
+                instance,
+                surface,
+                physical_device: pdevice,
+                swapchain,
+                entry,
+                device,
+                surface_loader,
+                swapchain_loader,
+            })
         }
     }
 }
