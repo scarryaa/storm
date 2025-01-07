@@ -1,0 +1,38 @@
+name: Windows Build
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+      
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          
+      - name: Build
+        working-directory: ./build
+        run: cmake --build . --config Release
+        
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-build
+          path: build/Release/*.exe
+
+      - name: Run Tests
+        working-directory: ./build
+        run: ctest -C Release --output-on-failure
+        
+      - name: Package Application
+        working-directory: ./build
+        run: |
+          cmake --install . --prefix package
+          7z a windows-package.zip ./package/*
