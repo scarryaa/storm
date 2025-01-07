@@ -1,14 +1,19 @@
 #ifdef __APPLE__
-#import <Cocoa/Cocoa.h>
+
 #include "../../../include/window.hpp"
+#import <Cocoa/Cocoa.h>
+
+namespace Storm {
 
 struct Window::WindowImpl {
     NSWindow* window;
     bool shouldClose = false;
 };
 
+} 
+
 @interface WindowDelegate : NSObject<NSWindowDelegate>
-@property Window::WindowImpl* impl;
+@property Storm::Window::WindowImpl* impl;
 @end
 
 @implementation WindowDelegate
@@ -16,6 +21,8 @@ struct Window::WindowImpl {
     self.impl->shouldClose = true;
 }
 @end
+
+namespace Storm {
 
 Window::Window(const char* title, int width, int height) {
     impl = new WindowImpl();
@@ -44,7 +51,12 @@ Window::Window(const char* title, int width, int height) {
 }
 
 Window::~Window() {
-    delete impl;
+    if (impl) {
+        if (impl->window) {
+            [impl->window close];
+        }
+        delete impl;
+    }
 }
 
 void Window::update() {
@@ -59,10 +71,14 @@ void Window::update() {
                 [NSApp sendEvent:event];
             }
         } while (event);
+        [NSApp updateWindows];
     }
 }
 
 bool Window::shouldClose() {
-    return impl->shouldClose;
+    return impl && impl->shouldClose;
 }
+
+} 
+
 #endif
