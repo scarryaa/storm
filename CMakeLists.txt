@@ -2,18 +2,38 @@ cmake_minimum_required(VERSION 3.23)
 project(storm LANGUAGES CXX OBJC OBJCXX)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(SOURCES 
+# Common sources
+set(COMMON_SOURCES
     src/main.cpp
-    src/platform/windows/window.cpp
-    src/platform/macos/window.mm
-    src/platform/linux/window.cpp
+)
+
+# Platform-specific sources
+if(APPLE)
+    set(PLATFORM_SOURCES
+        src/platform/macos/window.mm
+    )
+    set(PLATFORM_LIBS "-framework Cocoa")
+elseif(WIN32)
+    set(PLATFORM_SOURCES
+        src/platform/windows/window.cpp
+    )
+    set(PLATFORM_LIBS "")
+elseif(UNIX)
+    set(PLATFORM_SOURCES
+        src/platform/linux/window.cpp
+    )
+    set(PLATFORM_LIBS X11)
+endif()
+
+# Combine sources
+set(SOURCES
+    ${COMMON_SOURCES}
+    ${PLATFORM_SOURCES}
 )
 
 add_executable(storm ${SOURCES})
 
-if(APPLE)
-    target_link_libraries(storm PRIVATE "-framework Cocoa")
-elseif(UNIX)
-    target_link_libraries(storm PRIVATE X11)
-endif()
+# Link platform-specific libraries
+target_link_libraries(storm PRIVATE ${PLATFORM_LIBS})
