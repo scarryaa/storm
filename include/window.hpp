@@ -1,11 +1,17 @@
+namespace Storm {
+
 class Window {
 public:
-  struct WindowImpl;
-  Window(const char *title, int width, int height);
-  ~Window();
-  void update();
-  bool shouldClose();
-
+    Window() = delete;
+    Window(const char* title, int width, int height);
+    ~Window();
+    
+    void update();
+    bool shouldClose();
+    
 private:
-  WindowImpl *impl;
+    struct WindowImpl;
+    WindowImpl* impl;
 };
+
+} 
