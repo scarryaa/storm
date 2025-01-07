@@ -2,6 +2,8 @@
 #include "../../../include/window.hpp"
 #include <windows.h>
 
+namespace Storm {
+
 struct Window::WindowImpl {
   HWND hwnd;
   bool shouldClose = false;
@@ -51,4 +53,6 @@ void Window::update() {
 }
 
 bool Window::shouldClose() { return impl->shouldClose; }
+
+} // namespace Storm
 #endif
